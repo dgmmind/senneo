@@ -1,0 +1,32 @@
+{
+  "name": "senneo",
+  "version": "1.0.0",
+  "description": "Senneo – Herramienta para envío masivo y automatizado de mensajes por WhatsApp, desarrollada con Baileys JS.",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js",
+    "dev": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dgmmind/senneo.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dgmmind/senneo/issues"
+  },
+  "homepage": "https://github.com/dgmmind/senneo#readme",
+  "dependencies": {
+    "baileys": "^6.7.18",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "pino": "^9.7.0",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0"
+  }
+}

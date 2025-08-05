@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Senneo - Enviar Mensajes WhatsApp</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header .emoji {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 0.9em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+        }
+
+        .logout-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 0.95em;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+            line-height: 1.5;
+        }
+
+        .emoji-picker {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .emoji-btn {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 5px;
+            transition: background-color 0.2s ease;
+        }
+
+        .emoji-btn:hover {
+            background: #e9ecef;
+        }
+
+        .send-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .send-btn .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-weight: 500;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .character-count {
+            text-align: right;
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        .logout-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logout-modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .logout-modal h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .logout-modal p {
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .logout-modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .logout-modal-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-modal-btn.cancel {
+            background: #6c757d;
+            color: white;
+        }
+
+        .logout-modal-btn.cancel:hover {
+            background: #5a6268;
+        }
+
+        .logout-modal-btn.confirm {
+            background: #dc3545;
+            color: white;
+        }
+
+        .logout-modal-btn.confirm:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button id="logoutBtn" class="logout-btn" onclick="showLogoutModal()">
+                🚪 Cerrar Sesión
+            </button>
+            <div class="emoji">📱</div>
+            <h1>Senneo</h1>
+            <div id="status" class="status disconnected">
+                <span class="loading"></span>
+                Verificando conexión...
+            </div>
+            <div id="authStatus" class="auth-status" style="font-size: 0.8em; color: #6c757d; margin-top: 10px;">
+                🔐 Verificando autenticación...
+            </div>
+        </div>
+
+        <form id="messageForm">
+            <div class="form-group">
+                <label for="phone">📞 Número de teléfono</label>
+                <input 
+                    type="tel" 
+                    id="phone" 
+                    name="phone" 
+                    placeholder="Ej: 50495698991"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="message">💬 Mensaje</label>
+                <textarea 
+                    id="message" 
+                    name="message" 
+                    placeholder="Escribe tu mensaje aquí..."
+                    required
+                ></textarea>
+                <div class="character-count">
+                    <span id="charCount">0</span> caracteres
+                </div>
+                <div class="info-text" style="font-size: 0.8em; color: #6c757d; margin-top: 5px;">
+                    ℹ️ Cada mensaje incluirá automáticamente fecha, hora e ID único para evitar duplicados
+                </div>
+            </div>
+
+            <div class="emoji-picker">
+                <button type="button" class="emoji-btn" onclick="addEmoji('😊')">😊</button>
+                <button type="button" class="emoji-btn" onclick="addEmoji('❤️')">❤️</button>
+                <button type="button" class="emoji-btn" onclick="addEmoji('👍')">👍</button>
+                <button type="button" class="emoji-btn" onclick="addEmoji('🎉')">🎉</button>
+                <button type="button" class="emoji-btn" onclick="addEmoji('🔥')">🔥</button>
+                <button type="button" class="emoji-btn" onclick="addEmoji('✨')">✨</button>
+                <button type="button" class="emoji-btn" onclick="addEmoji('💯')">💯</button>
+                <button type="button" class="emoji-btn" onclick="addEmoji('🚀')">🚀</button>
+                <button type="button" class="emoji-btn" onclick="addEmoji('💪')">💪</button>
+                <button type="button" class="emoji-btn" onclick="addEmoji('🌟')">🌟</button>
+            </div>
+
+            <button type="submit" id="sendBtn" class="send-btn" disabled>
+                <span class="spinner"></span>
+                Enviar Mensaje
+            </button>
+        </form>
+
+        <div id="messageContainer"></div>
+    </div>
+
+    <!-- Modal de confirmación de logout -->
+    <div id="logoutModal" class="logout-modal">
+        <div class="logout-modal-content">
+            <h3>🚪 Cerrar Sesión</h3>
+            <p>¿Estás seguro de que quieres cerrar la sesión de WhatsApp?<br><br>
+            <strong>Nota:</strong> Tendrás que escanear el código QR nuevamente para volver a conectarte.</p>
+            <div class="logout-modal-buttons">
+                <button class="logout-modal-btn cancel" onclick="hideLogoutModal()">Cancelar</button>
+                <button class="logout-modal-btn confirm" onclick="confirmLogout()">Sí, Cerrar Sesión</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+
+        // Elementos del DOM
+        const statusEl = document.getElementById('status');
+        const messageForm = document.getElementById('messageForm');
+        const phoneInput = document.getElementById('phone');
+        const messageInput = document.getElementById('message');
+        const charCount = document.getElementById('charCount');
+        const sendBtn = document.getElementById('sendBtn');
+        const messageContainer = document.getElementById('messageContainer');
+        const authStatusEl = document.getElementById('authStatus');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const logoutModal = document.getElementById('logoutModal');
+
+        // Mostrar modal de logout
+        function showLogoutModal() {
+            logoutModal.style.display = 'flex';
+        }
+
+        // Ocultar modal de logout
+        function hideLogoutModal() {
+            logoutModal.style.display = 'none';
+        }
+
+        // Confirmar logout
+        async function confirmLogout() {
+            try {
+                logoutBtn.disabled = true;
+                logoutBtn.innerHTML = '🔄 Cerrando...';
+
+                const response = await fetch(`${API_BASE}/auth/clear`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('✅ Sesión cerrada exitosamente. Redirigiendo...', 'success');
+                    hideLogoutModal();
+                    
+                    // Redirigir a la página de autenticación después de 2 segundos
+                    setTimeout(() => {
+                        window.location.href = '/auth.html';
+                    }, 2000);
+                } else {
+                    showMessage(`❌ Error: ${data.message}`, 'error');
+                    logoutBtn.disabled = false;
+                    logoutBtn.innerHTML = '🚪 Cerrar Sesión';
+                }
+            } catch (error) {
+                showMessage('❌ Error de conexión con el servidor', 'error');
+                logoutBtn.disabled = false;
+                logoutBtn.innerHTML = '🚪 Cerrar Sesión';
+            }
+        }
+
+        // Cerrar modal al hacer clic fuera de él
+        logoutModal.addEventListener('click', function(e) {
+            if (e.target === logoutModal) {
+                hideLogoutModal();
+            }
+        });
+
+        // Verificar estado de conexión
+        async function checkConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                const data = await response.json();
+                
+                if (data.success && data.connected) {
+                    statusEl.className = 'status connected';
+                    statusEl.innerHTML = '✅ Conectado';
+                    sendBtn.disabled = false;
+                    logoutBtn.disabled = false;
+                } else {
+                    statusEl.className = 'status disconnected';
+                    statusEl.innerHTML = '❌ Desconectado';
+                    sendBtn.disabled = true;
+                    logoutBtn.disabled = true;
+                }
+            } catch (error) {
+                statusEl.className = 'status disconnected';
+                statusEl.innerHTML = '❌ Error de conexión';
+                sendBtn.disabled = true;
+                logoutBtn.disabled = true;
+            }
+        }
+
+        // Contador de caracteres
+        messageInput.addEventListener('input', function() {
+            const count = this.value.length;
+            charCount.textContent = count;
+        });
+
+        // Agregar emoji
+        function addEmoji(emoji) {
+            const textarea = document.getElementById('message');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+            
+            textarea.value = text.substring(0, start) + emoji + text.substring(end);
+            textarea.selectionStart = textarea.selectionEnd = start + emoji.length;
+            textarea.focus();
+            
+            // Actualizar contador
+            charCount.textContent = textarea.value.length;
+        }
+
+        // Enviar mensaje
+        messageForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const phone = phoneInput.value.trim();
+            const message = messageInput.value.trim();
+            
+            if (!phone || !message) {
+                showMessage('Por favor completa todos los campos', 'error');
+                return;
+            }
+
+            // Mostrar loading
+            sendBtn.disabled = true;
+            const spinner = sendBtn.querySelector('.spinner');
+            if (spinner) {
+                spinner.style.display = 'inline-block';
+            }
+            sendBtn.textContent = 'Enviando...';
+
+            try {
+                const response = await fetch(`${API_BASE}/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ phone, text: message })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('✅ Mensaje enviado exitosamente!', 'success');
+                    messageForm.reset();
+                    charCount.textContent = '0';
+                } else {
+                    showMessage(`❌ Error: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showMessage('❌ Error de conexión con el servidor', 'error');
+            } finally {
+                // Restaurar botón
+                sendBtn.disabled = false;
+                const spinner = sendBtn.querySelector('.spinner');
+                if (spinner) {
+                    spinner.style.display = 'none';
+                }
+                sendBtn.textContent = 'Enviar Mensaje';
+            }
+        });
+
+        // Mostrar mensajes
+        function showMessage(text, type) {
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${type}`;
+            messageEl.textContent = text;
+            
+            messageContainer.innerHTML = '';
+            messageContainer.appendChild(messageEl);
+            
+            // Auto-remover después de 5 segundos
+            setTimeout(() => {
+                messageEl.remove();
+            }, 5000);
+        }
+
+        // Verificar estado de autenticación
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/status`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (data.hasSession) {
+                        authStatusEl.innerHTML = '🔐 Sesión guardada - Conectado automáticamente';
+                        authStatusEl.style.color = '#155724';
+                        authStatusEl.style.fontWeight = '600';
+                    } else {
+                        authStatusEl.innerHTML = '🔐 Sin sesión - Redirigiendo a autenticación...';
+                        authStatusEl.style.color = '#721c24';
+                        
+                        // Redirigir a la página de autenticación después de 2 segundos
+                        setTimeout(() => {
+                            window.location.href = '/auth.html';
+                        }, 2000);
+                    }
+                }
+            } catch (error) {
+                authStatusEl.innerHTML = '🔐 Error verificando autenticación';
+                authStatusEl.style.color = '#721c24';
+            }
+        }
+
+        // Verificar conexión cada 5 segundos
+        checkConnection();
+        checkAuthStatus();
+        setInterval(checkConnection, 5000);
+        setInterval(checkAuthStatus, 10000); // Verificar auth cada 10 segundos
+    </script>
+</body>
+</html> 
